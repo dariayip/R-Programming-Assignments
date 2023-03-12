@@ -1,0 +1,124 @@
+---
+title: 'CMTH 642 Data Analytics: Advanced Methods'
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+<center> <h1> Assignment 3 (10%) </h1> </center>
+<center>  <h3> [Daria Yip] </h2> </center>
+<center> <h3> [DHA - Student#500721106] </h2> </center>
+---
+
+
+#### 1. Import to R the following fiel: http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv (The dataset is related to white Portuguese "Vinho Verde" wine. For more info: https://archive.ics.uci.edu/ml/datasets/Wine+Quality) (3 points)
+```{r}
+library(RCurl) #getURL 
+u <- getURL("http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv")
+whitewine <- read.csv(text = u, header = TRUE, sep = ";")
+#This is a very important dataset to specify the separators,
+#otherwise you will have a lot of observations in one column.
+```
+
+#### 2. Check the datatypes of the attributes. (3 points)
+```{r}
+str(whitewine)
+#All the attributes are num type except quality which is int.
+```
+  
+#### 3. Are there any missing values in the dataset? (4 points)
+```{r}
+sum(is.na(whitewine))
+#There are no missing values in the dataset.
+```
+
+#### 4. What is the correlation between the attributes other than Quality? (10 points)
+```{r}
+correlation <- cor(whitewine[-12]) #want to have correlation of
+#every attribute other than Quality which is variable 12
+correlation
+#Visualize the correlation
+library(corrplot)
+corrplot(correlation)
+```
+
+#### 5. Graph the frequency distribution of wine quality by using Quality. (10 points)
+```{r}
+hist(whitewine$quality, main = "Wine Quality", sub = "Wine Ratings")
+```
+
+#### 6.	Reduce the levels of rating for quality to three levels as high, medium and low. Assign the levels of 3 and 4 to level 0; 5 and 6 to level 1; and 7,8 and 9 to level 2. (10 points)
+```{r}
+whitewine$quality <- ifelse(whitewine$quality < 5, "Low", ifelse(whitewine$quality >= 7, "High", "Medium"))
+head(whitewine)
+```
+
+#### 7. Normalize the data set by using the following function: (12 points)
+```{r}
+normalize <- function(x){
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+```
+
+```{r}
+whitewinen <- as.data.frame(lapply(whitewine[1:11], normalize))
+#normalize the dataframe with lapply and only variables 1:11
+summary(whitewine[1])
+#checking the first variable to see if the data has been 
+#normalized. We can see it has by the 0-1 scale.
+```
+
+#### 8. Divide the dataset to training and test sets. (12 points)
+```{r}
+trainingtesting <- sample(nrow(whitewine), floor(nrow(whitewine) * 0.7)) #70% is the training set and we will choose them 
+#randomly with the "sample" function, floor will return a 
+#numeric vector with the largest integers
+training <- whitewinen[trainingtesting,]
+test <- whitewinen[-trainingtesting,] #testing will be that #which is not the training
+```
+
+#### 9. Use the KNN algorithm to predict the quality of wine using its attributes. (12 points)
+```{r}
+#install.packages("class")
+library(class)
+training_labels <- whitewine[trainingtesting, 12]
+test_labels <- whitewine[-trainingtesting, 12]
+prediction <- knn(train = training, test = test, cl = training_labels, k = 10)
+table(prediction)
+```
+
+#### 10. Display the confusion matrix to evaluate the model performance. (12 points)
+```{r}
+confusionmatrix <- table(Actual = test_labels, Predicted = prediction)
+confusionmatrix
+```
+
+#### 11. Evaluate the model performance by computing Accuracy, Sensitivity and Specificity. (12 points)
+```{r}
+# install.packages("class")
+#install.packages("gmodels")
+library(gmodels)
+#CrossTable(x = test_labels, y = prediction, prop.chisq = F)
+accuracy <- mean(test_labels == prediction)
+accuracy
+
+error <- mean(test_labels != prediction)
+error
+
+#install.packages("caret", dependencies = TRUE)
+library(caret)
+
+test_labels <- as.factor(test_labels) #to make the levels
+#the same for the confusionMatrix function
+
+confusionMatrix(prediction, test_labels, positive = "pos")
+#The model below shows the stats of accuracy which is 78.91%.
+#Sensitivity = TruePositives/(TruePositives + FalseNegatives)
+#Specificity is the True Negatives proportion.
+#Specificity = TrueNegatives/(TrueNegatives + FalseNegatives)
+#Precision = TruePositives/(TruePositives + FalsePositives).
+```
+
+This is the end of Assignment 3
+
+Ceni Babaoglu, PhD
